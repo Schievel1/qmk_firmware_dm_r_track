@@ -49,7 +49,10 @@
 #undef SPLIT_HAND_PIN
 #define MASTER_RIGHT
 #define SPLIT_TRANSPORT_MIRROR
-#define SPLIT_TRANSACTION_IDS_USER USER_SYNC_A
+// #define SPLIT_TRANSACTION_IDS_USER USER_SYNC_A
+#define SPLIT_LAYER_STATE
+#define SPLIT_LED_STATE_ENABLE
+#define SPLIT_ACTIVITY_ENABLE
 #define USER_COM_POLL_TIME_MS 100 // user data is sent between the two halfes by this time in milliseconds
 
 /*********************************/

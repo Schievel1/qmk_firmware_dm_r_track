@@ -25,7 +25,7 @@ QUANTUM_PAINTER_ENABLE = yes
 QUANTUM_PAINTER_DRIVERS = ili9341_spi
 
 # master slave user sync
-SRC += transport.c
+# SRC += transport.c
 # big LED display
 SRC += ili9341_display.c
 # small oled display

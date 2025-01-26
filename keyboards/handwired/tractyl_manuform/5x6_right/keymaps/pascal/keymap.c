@@ -37,7 +37,7 @@ uint32_t idle_timer = 0;
 void     idle_function(void);
 
 void housekeeping_task_user(void) {
-    master_slave_com();
+    // master_slave_com();
     // draw display every 33 ms
     static uint32_t last_draw = 0;
     if (timer_elapsed32(last_draw) > 33) { // Throttle to 30fps
@@ -60,7 +60,7 @@ void keyboard_post_init_user(void) {
     debug_keyboard = false;
     debug_mouse    = false;
     // user comms
-    user_sync_init();
+    // user_sync_init();
     // init ili9341 display
     big_display = ili9341_init();
     // backlight of the big LED screen on on startup
@@ -70,7 +70,8 @@ void keyboard_post_init_user(void) {
     if (!(host_keyboard_led_state().num_lock)) {
         register_code(KC_NUM_LOCK); //        unregister_code(KC_NUM_LOCK);
     }
-	// normalize_keymap();
+	normalize_keymap();
+    layer_clear();
 }
 
 // HACK terrible hack to UNmagic the keymap
@@ -107,7 +108,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                          KC_TAB,  KC_QUOT, KC_COMM,   KC_DOT,    KC_P,    KC_Y,                  KC_F,    KC_G,       KC_C,      KC_R,      KC_L,  KC_SLSH,
                          KC_ESC,     KC_A,    KC_O,     KC_E,    KC_U,    KC_I,                  KC_D,    KC_H,       KC_T,      KC_N,      KC_S,  KC_MINS,
                          KC_NO,   KC_SCLN,    KC_Q,     KC_J,    KC_K,    KC_X,                  KC_B,    KC_M,       KC_W,      KC_V,      KC_Z,  KC_BSLS,
-                                           KC_LBRC,  KC_RBRC,                                                      KC_PGUP,     LOWER,
+                                           KC_LBRC,  KC_RBRC,                                                      KC_PGUP,     KC_PGDN,
                                                             SC_LSPO,    KC_SPC,                    SC_RSPC,
                                                             KC_LCTL,    LOWER,                     KC_BSPC,
                                                             KC_LALT,    KC_LGUI,        KC_ENT, KC_RGUI
@@ -117,7 +118,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
                         KC_TILD,     KC_F1,    KC_F2,    KC_F3,         KC_F4,     KC_F5,          KC_F6,   KC_F7,     KC_F8,       KC_F9,      KC_F10,     KC_DEL,
                         _______,    _______, _______,  _______,       _______,   KC_LCBR,        KC_RCBR, KC_BTN2,   BS_NORM,     BS_TOGG,      EE_CLR,    QK_BOOT,
-                        TO(_DVORAK),_______, _______,    RAISE,        KC_DEL,   KC_LPRN,        KC_RPRN, KC_LEFT,     KC_UP,     KC_DOWN,     KC_RGHT,    KC_PIPE,
+                        _______,    _______, _______,    RAISE,        KC_DEL,   KC_LPRN,        KC_RPRN, KC_LEFT,     KC_UP,     KC_DOWN,     KC_RGHT,    KC_PIPE,
                         KC_CAPS ,   RGB_TOG, _______,  LCTL(KC_X), LCTL(KC_C),LCTL(KC_V),        _______, KC_BTN1,   BL_TOGG,       BL_UP,     BL_DOWN,    DB_TOGG,
                                            RGB_MOD,RGB_RMOD,                                                       RGB_HUI,RGB_SAI,
                                                                  _______,_______,                         _______,
@@ -129,7 +130,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
                         _______, _______, _______, _______, _______, _______,                    _______,  KC_NUM, KC_PSLS, KC_PAST, KC_PMNS, KC_CALC,
                         _______, _______, _______, _______, _______, KC_LBRC,                    KC_RBRC,   KC_P7,   KC_P8,   KC_P9,   KC_PPLS, KC_MUTE,
-                    TO(_DVORAK), _______, _______, _______, _______, KC_LPRN,                    KC_RPRN,   KC_P4,   KC_P5,   KC_P6,   _______, KC_VOLU,
+                        _______, _______, _______, _______, _______, KC_LPRN,                    KC_RPRN,   KC_P4,   KC_P5,   KC_P6,   _______, KC_VOLU,
                         _______, _______, _______, _______, _______, _______,                    KC_P0,     KC_P1,   KC_P2,   KC_P3,   KC_PEQL, KC_VOLD,
                                            _______,_______,                                                         KC_DOT, KC_COMM,
                                                                  _______,_______,                     _______,
@@ -179,10 +180,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t* record) {
 
 void matrix_scan_user(void) {
     // idle_timer needs to be set one time
-    if (idle_timer == 0) idle_timer = timer_read32();
-    if (timer_elapsed32(idle_timer) > IDLE_TIMEOUT_SECS * 1000 && !idle_mode) {
-        idle_mode  = true;
-        idle_timer = timer_read32();
+    // if (idle_timer == 0) idle_timer = timer_read32();
+    // if (timer_elapsed32(idle_timer) > IDLE_TIMEOUT_SECS * 1000 && !idle_mode) {
+        // idle_mode  = true;
+        // idle_timer = timer_read32();
+    // }
+    if (last_input_activity_elapsed() > IDLE_TIMEOUT_SECS*1000 && !idle_mode) {
+        idle_mode = true;
     }
     idle_function();
 }
