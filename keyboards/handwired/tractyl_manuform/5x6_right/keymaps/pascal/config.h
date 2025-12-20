@@ -3,7 +3,7 @@
 /*******************************/
 /*  d e b u g   d e f i n e s  */
 /*******************************/
-/* #define DEBUG_MATRIX_SCAN_RATE */
+// #define DEBUG_MATRIX_SCAN_RATE
 
 /*****************************************/
 /*  b o o t m a g i c   l i t e   k e y  */
@@ -19,12 +19,13 @@
 // we want to have the top left key to be the bootmagic lite key
 // pressing the top right key (predefined in 5x6_right config.h
 // is inconvenient)
-// #undef BOOTMAGIC_LITE_COLUMN_RIGHT // we want to have the top left key to be
+#undef BOOTMAGIC_COLUMN_RIGHT // we want to have the top left key to be
                                    // the bootmagic lite key. Pressing the
                                    // top right key (like defined in 5x6_right config.h
                                    // is inconvenient)
 #define BOOTMAGIC_COLUMN 0
 #define BOOTMAGIC_ROW 0
+#define BOOTMAGIC_COLUMN_RIGHT 6
 
 // #define NO_ACTION_LAYER
 // #define NO_ACTION_TAPPING
@@ -38,21 +39,22 @@
 /***********************/
 /*  i d l e   m o d e  */
 /***********************/
-#define IDLE_TIMEOUT_SECS 30
-#define RGB_MATRIX_IDLE_MODE MY_RGB_MATRIX_RAINBOW_PINWHEELS
+#define IDLE_TIMEOUT_SECS 10
 
 /*************************************************************************************************************************/
-/*  S p l i t   o p t i o n s                                                                                            */
+/*  S p l i t   o p t i o n s */
+#define MASTER_RIGHT
+
 /*  T h i s   i s   t o   h a v e   l a y e r   d a t a   o f
  *  t h e   m a s t e r   o n   t h e   s l a v e   s i d e  */
-/*************************************************************************************************************************/
-#undef SPLIT_HAND_PIN
-#define MASTER_RIGHT
+/************************************************************************************************************************/
 #define SPLIT_TRANSPORT_MIRROR
-// #define SPLIT_TRANSACTION_IDS_USER USER_SYNC_A
-#define SPLIT_LAYER_STATE
+#define SPLIT_TRANSACTION_IDS_USER USER_SYNC_A
+#define SPLIT_LAYER_STATE_ENABLE
 #define SPLIT_LED_STATE_ENABLE
 #define SPLIT_ACTIVITY_ENABLE
+#define SPLIT_WPM_ENABLE
+#define SPLIT_OLED_ENABLE
 #define USER_COM_POLL_TIME_MS 100 // user data is sent between the two halfes by this time in milliseconds
 
 /*********************************/
@@ -89,70 +91,13 @@
 #define BACKLIGHT_PAL_MODE 2
 #define BACKLIGHT_LEVELS 5
 
-/***************************************/
-/*  W S 2 8 1 2   R G B   M a t r i x  */
-/***************************************/
-#undef WS2812_EXTERNAL_PULLUP
-#undef RGBLED_NUM
-#undef RGBLIGHT_SPLIT
-#undef RGBLED_SPLIT
-#define DRIVER_LED_TOTAL 62
-#define RGB_MATRIX_LED_COUNT 62
-#define RGBLED_NUM 62
-#define RGB_MATRIX_SPLIT \
-    { 32, 30 }
-#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 80
-#define RGB_MATRIX_DEFAULT_MODE RGB_MATRIX_TYPING_HEATMAP
-#define RGB_DISABLE_WHEN_USB_SUSPENDED
-#define RGB_MATRIX_FRAMEBUFFER_EFFECTS
-#define RGB_DISABLE_WHEN_USB_SUSPENDED
-#define RGB_MATRIX_KEYPRESSES
-#define RGB_TRIGGER_ON_KEYDOWN
-
-#define ENABLE_RGB_MATRIX_NON
-#define ENABLE_RGB_MATRIX_SOLID_COLOR
-#define ENABLE_RGB_MATRIX_ALPHAS_MODS
-#define ENABLE_RGB_MATRIX_GRADIENT_UP_DOWN
-#define ENABLE_RGB_MATRIX_GRADIENT_LEFT_RIGHT
-#define ENABLE_RGB_MATRIX_BREATHING
-#define ENABLE_RGB_MATRIX_BAND_SAT
-#define ENABLE_RGB_MATRIX_BAND_VAL
-#define ENABLE_RGB_MATRIX_BAND_PINWHEEL_SAT
-#define ENABLE_RGB_MATRIX_BAND_PINWHEEL_VAL
-#define ENABLE_RGB_MATRIX_BAND_SPIRAL_SAT
-#define ENABLE_RGB_MATRIX_BAND_SPIRAL_VAL
-#define ENABLE_RGB_MATRIX_CYCLE_ALL
-#define ENABLE_RGB_MATRIX_CYCLE_LEFT_RIGHT
-#define ENABLE_RGB_MATRIX_CYCLE_UP_DOWN
-#define ENABLE_RGB_MATRIX_CYCLE_OUT_IN
-#define ENABLE_RGB_MATRIX_CYCLE_OUT_IN_DUAL
-#define ENABLE_RGB_MATRIX_RAINBOW_MOVING_CHEVRON
-#define ENABLE_RGB_MATRIX_CYCLE_PINWHEEL
-#define ENABLE_RGB_MATRIX_CYCLE_SPIRAL
-#define ENABLE_RGB_MATRIX_DUAL_BEACON
-#define ENABLE_RGB_MATRIX_RAINBOW_BEACON
-#define ENABLE_RGB_MATRIX_RAINBOW_PINWHEELS
-#define ENABLE_RGB_MATRIX_RAINDROPS
-#define ENABLE_RGB_MATRIX_JELLYBEAN_RAINDROPS
-#define ENABLE_RGB_MATRIX_HUE_BREATHING
-#define ENABLE_RGB_MATRIX_HUE_PENDULUM
-#define ENABLE_RGB_MATRIX_HUE_WAVE
-#if defined(RGB_MATRIX_FRAMEBUFFER_EFFECTS)
-#    define ENABLE_RGB_MATRIX_TYPING_HEATMAP
-#    define ENABLE_RGB_MATRIX_DIGITAL_RAIN
-#endif
-#if defined(RGB_MATRIX_KEYPRESSES) || defined(RGB_MATRIX_KEYRELEASES)
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE_SIMPLE
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE_WIDE
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTIWIDE
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE_CROSS
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTICROSS
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE_NEXUS
-#    define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTINEXUS
-#    define ENABLE_RGB_MATRIX_SPLASH
-#    define ENABLE_RGB_MATRIX_MULTISPLASH
-#    define ENABLE_RGB_MATRIX_SOLID_SPLASH
-#    define ENABLE_RGB_MATRIX_SOLID_MULTISPLASH
-#endif
-#define ENABLE_RGB_MATRIX_EFFECT_MAX
+#undef NO_DEBUG
+#undef NO_PRINT
+// #undef OLED_TIMEOUT
+// #define OLED_TIMEOUT 0
+#define OLED_DISABLE_TIMEOUT
+#define OLED_FADE_OUT
+#define OLED_FADE_OUT_INTERVAL 0
+#define OLED_UPDATE_INTERVAL 50
+// #define SPLIT_USB_DETECT
+// #define NO_USB_STARTUP_CHECK

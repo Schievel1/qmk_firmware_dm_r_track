@@ -14,40 +14,64 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "process_key_override.h"
+#include "tractyl_manuform.h"
+#include "wpm.h"
 #include QMK_KEYBOARD_H
-#include "qp.h"
+#include "pointing_device.h"
+#include "debug.h"
+
+#include "oled_driver.h"
 
 // user level imports
 #include "keymap.h"
 #include "transport.h"
-#include "ili9341_display.h"
-#include "rgb_matrix_user.h"
-
-void normalize_keymap(void);
+#include "oled_display.h"
 
 // debugging:
 #ifdef CONSOLE_ENABLE
 #    include "print.h"
 #endif
 
+
 // global declarations for idle mode
-bool     idle_mode = false;
-int      old_rgb_mode;
-uint32_t idle_timer = 0;
-void     idle_function(void);
+static bool idle_mode = false;
+bool get_idle_mode(void)
+{
+	return idle_mode;
+}
+void set_idle_mode(bool toset)
+{
+    idle_mode = toset;
+}
+
+static bool fake_mode = false;
+bool get_fake_mode(void)
+{
+    return fake_mode;
+}
+void set_fake_mode(bool toset)
+{
+	fake_mode = toset;
+}
 
 void housekeeping_task_user(void) {
-    // master_slave_com();
-    // draw display every 33 ms
-    static uint32_t last_draw = 0;
-    if (timer_elapsed32(last_draw) > 33) { // Throttle to 30fps
-        last_draw = timer_read32();
-        ili9341_draw_display(big_display);
-    }
+    master_slave_com();
     // enable sniping mode with lower layer
     charybdis_set_pointer_sniping_enabled(biton32(layer_state) == _LOWER);
-    // enable dragscroll mode when left shift key is pressed
+    // enable dragscroll mode when left shift key is rressed
     charybdis_set_pointer_dragscroll_enabled(biton32(layer_state) == _RAISE);
+
+    if (!idle_mode && last_input_activity_elapsed() > IDLE_TIMEOUT_SECS * 1000) {
+		oled_clear();
+        idle_mode = true;
+    } else if (idle_mode && last_input_activity_elapsed() <= IDLE_TIMEOUT_SECS * 1000) {
+        oled_clear();
+        idle_mode = false;
+    }
+
+    // read chip timer to generate random number for cat idle blinks
+    set_anim_frame_duration1_old(timer_read32() % 3);
 }
 
 /***********/
@@ -55,43 +79,16 @@ void housekeeping_task_user(void) {
 /***********/
 void keyboard_post_init_user(void) {
     // Debug: Customise these values to desired behaviour
-    debug_enable   = false;
-    debug_matrix   = false;
-    debug_keyboard = false;
-    debug_mouse    = false;
+    debug_config.enable = false;
+    debug_config.matrix = false;
+    debug_config.keyboard = false;
+    debug_config.mouse    = false;
     // user comms
-    // user_sync_init();
-    // init ili9341 display
-    big_display = ili9341_init();
-    // backlight of the big LED screen on on startup
-    backlight_enable();
-    backlight_level(4);
+    user_sync_init();
     // turn numlock on on startup
     if (!(host_keyboard_led_state().num_lock)) {
         register_code(KC_NUM_LOCK); //        unregister_code(KC_NUM_LOCK);
     }
-	normalize_keymap();
-    layer_clear();
-}
-
-// HACK terrible hack to UNmagic the keymap
-// somehow this gets mixed up all over the place sometimes
-void normalize_keymap(void) {
-    keymap_config.raw                      = eeconfig_read_keymap();
-    keymap_config.swap_control_capslock    = false;
-    keymap_config.swap_escape_capslock     = false;
-    keymap_config.capslock_to_control      = false;
-    keymap_config.swap_lalt_lgui           = false;
-    keymap_config.swap_ralt_rgui           = false;
-    keymap_config.swap_lctl_lgui           = false;
-    keymap_config.swap_rctl_rgui           = false;
-    keymap_config.no_gui                   = false;
-    keymap_config.swap_grave_esc           = false;
-    keymap_config.swap_backslash_backspace = false;
-    keymap_config.swap_lalt_lgui = keymap_config.swap_ralt_rgui = false;
-    keymap_config.swap_lctl_lgui = keymap_config.swap_rctl_rgui = false;
-    eeconfig_update_keymap(keymap_config.raw);
-    clear_keyboard();
 }
 
 /*******************/
@@ -101,63 +98,64 @@ const key_override_t   lcbr_key_override = ko_make_basic(MOD_MASK_SHIFT, KC_LCBR
 const key_override_t   rcbr_key_override = ko_make_basic(MOD_MASK_SHIFT, KC_RCBR, KC_RBRC); // Shift } is ]
 const key_override_t*  key_overrides[]   = {&lcbr_key_override, &rcbr_key_override};
 
+enum custom_keycodes {
+	KC_FAKE = SAFE_RANGE,
+};
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_DVORAK] = LAYOUT_5x6_right(
-                         KC_GRV,     KC_1,    KC_2,    KC_3 ,    KC_4,    KC_5,                  KC_6,    KC_7,       KC_8,      KC_9,      KC_0,   KC_EQL,
-                         KC_TAB,  KC_QUOT, KC_COMM,   KC_DOT,    KC_P,    KC_Y,                  KC_F,    KC_G,       KC_C,      KC_R,      KC_L,  KC_SLSH,
-                         KC_ESC,     KC_A,    KC_O,     KC_E,    KC_U,    KC_I,                  KC_D,    KC_H,       KC_T,      KC_N,      KC_S,  KC_MINS,
-                         KC_NO,   KC_SCLN,    KC_Q,     KC_J,    KC_K,    KC_X,                  KC_B,    KC_M,       KC_W,      KC_V,      KC_Z,  KC_BSLS,
-                                           KC_LBRC,  KC_RBRC,                                                      KC_PGUP,     KC_PGDN,
-                                                            SC_LSPO,    KC_SPC,                    SC_RSPC,
-                                                            KC_LCTL,    LOWER,                     KC_BSPC,
-                                                            KC_LALT,    KC_LGUI,        KC_ENT, KC_RGUI
-                         ),
+KC_GRV,     KC_1,    KC_2,    KC_3 ,    KC_4,    KC_5,                  KC_6,    KC_7,       KC_8,      KC_9,      KC_0,   KC_EQL,
+KC_TAB,  KC_QUOT, KC_COMM,   KC_DOT,    KC_P,    KC_Y,                  KC_F,    KC_G,       KC_C,      KC_R,      KC_L,  KC_SLSH,
+KC_ESC,     KC_A,    KC_O,     KC_E,    KC_U,    KC_I,                  KC_D,    KC_H,       KC_T,      KC_N,      KC_S,  KC_MINS,
+KC_NO,   KC_SCLN,    KC_Q,     KC_J,    KC_K,    KC_X,                  KC_B,    KC_M,       KC_W,      KC_V,      KC_Z,  KC_BSLS,
+                  KC_LBRC,  KC_RBRC,                                                      KC_PGUP,     KC_PGDN,
+                                   SC_LSPO,    KC_SPC,                    SC_RSPC,
+                                   KC_LCTL,    LOWER,                     KC_BSPC,
+                                   KC_LALT,    KC_LGUI,        KC_ENT, KC_RGUI
+),
 
   [_LOWER] = LAYOUT_5x6_right(
-
-                        KC_TILD,     KC_F1,    KC_F2,    KC_F3,         KC_F4,     KC_F5,          KC_F6,   KC_F7,     KC_F8,       KC_F9,      KC_F10,     KC_DEL,
-                        _______,    _______, _______,  _______,       _______,   KC_LCBR,        KC_RCBR, KC_BTN2,   BS_NORM,     BS_TOGG,      EE_CLR,    QK_BOOT,
-                        _______,    _______, _______,    RAISE,        KC_DEL,   KC_LPRN,        KC_RPRN, KC_LEFT,     KC_UP,     KC_DOWN,     KC_RGHT,    KC_PIPE,
-                        KC_CAPS ,   RGB_TOG, _______,  LCTL(KC_X), LCTL(KC_C),LCTL(KC_V),        _______, KC_BTN1,   BL_TOGG,       BL_UP,     BL_DOWN,    DB_TOGG,
-                                           RGB_MOD,RGB_RMOD,                                                       RGB_HUI,RGB_SAI,
-                                                                 _______,_______,                         _______,
-                                                                 _______,_______,                         _______,
-                                                                 _______,_______,                 _______,_______
-                        ),
+QK_BOOT,     KC_F1,    KC_F2,    KC_F3,         KC_F4,     KC_F5,          KC_F6,   KC_F7,     KC_F8,       KC_F9,      KC_F10,     KC_DEL,
+QK_RBT,    _______, _______,  _______,       _______,   KC_LCBR,        KC_RCBR, MS_BTN2,   BS_NORM,     BS_TOGG,      EE_CLR,    QK_BOOT,
+_______,    _______, _______,    RAISE,        KC_DEL,   KC_LPRN,        KC_RPRN, KC_LEFT,     KC_UP,     KC_DOWN,     KC_RGHT,    KC_PIPE,
+KC_CAPS ,   _______, _______,  LCTL(KC_X), LCTL(KC_C),LCTL(KC_V),        _______, MS_BTN1,   BL_TOGG,       BL_UP,     BL_DOWN,    DB_TOGG,
+                   _______,_______,                                                       _______,_______,
+                                         _______,_______,                         _______,
+                                         _______,_______,                         _______,
+                                         _______,_______,                 _______,_______
+),
 
   [_RAISE] = LAYOUT_5x6_right(
-
-                        _______, _______, _______, _______, _______, _______,                    _______,  KC_NUM, KC_PSLS, KC_PAST, KC_PMNS, KC_CALC,
-                        _______, _______, _______, _______, _______, KC_LBRC,                    KC_RBRC,   KC_P7,   KC_P8,   KC_P9,   KC_PPLS, KC_MUTE,
-                        _______, _______, _______, _______, _______, KC_LPRN,                    KC_RPRN,   KC_P4,   KC_P5,   KC_P6,   _______, KC_VOLU,
-                        _______, _______, _______, _______, _______, _______,                    KC_P0,     KC_P1,   KC_P2,   KC_P3,   KC_PEQL, KC_VOLD,
-                                           _______,_______,                                                         KC_DOT, KC_COMM,
-                                                                 _______,_______,                     _______,
-                                                                 _______,_______,                     _______,
-                                                                 _______,_______,             _______,_______
-                        ),};
+_______, _______, _______, _______, _______, _______,                    _______,  KC_NUM, KC_PSLS, KC_PAST, KC_PMNS, KC_CALC,
+_______, _______, _______, _______, _______, KC_LBRC,                    KC_RBRC,   KC_P7,   KC_P8,   KC_P9,   KC_PPLS, KC_MUTE,
+KC_FAKE, _______, _______, _______, _______, KC_LPRN,                    KC_RPRN,   KC_P4,   KC_P5,   KC_P6,   _______, KC_VOLU,
+_______, _______, _______, _______, _______, _______,                    KC_P0,     KC_P1,   KC_P2,   KC_P3,   KC_PEQL, KC_VOLD,
+                   _______,_______,                                                         KC_DOT, KC_COMM,
+                                         _______,_______,                     _______,
+                                         _______,_______,                     _______,
+                                         _______,_______,             _______,_______
+),};
 // clang-format on
 
 /*****************************/
 /*  f o r   e n c o d e r s  */
 /*****************************/
 bool encoder_update_user(uint8_t index, bool clockwise) {
-    dprintf("encoder index: %d\n", index);
+    // dprintf("encoder index: %d\n", index);
     if (index == 1) // master side
     {
         if (clockwise) {
-            tap_code(KC_WH_U);
+            tap_code(MS_WHLU);
         } else {
-            tap_code(KC_WH_D);
+            tap_code(MS_WHLD);
         }
     }
     if (index == 0) // slave side
     {
         if (clockwise) {
-            tap_code(KC_WH_U);
+            tap_code(MS_WHLU);
         } else {
-            tap_code(KC_WH_D);
+            tap_code(MS_WHLD);
         }
     }
     return true;
@@ -167,38 +165,66 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 /*  k e y b o a r d   i d l e   t i m e r  */
 /*******************************************/
 bool process_record_user(uint16_t keycode, keyrecord_t* record) {
-    if (record->event.pressed) {
-        idle_timer = timer_read32();
-        idle_mode  = false;
+	if (record->event.pressed) {
+        set_fake_mode(false);
     }
-    // If console is enabled, it will print the matrix position and status of each key pressed
-#ifdef CONSOLE_ENABLE
+
+    switch (keycode) {
+        case KC_FAKE:
+            if (record->event.pressed) {
+                if (!get_fake_mode()) {
+					set_fake_mode(true);
+					}
+				else {
+                        set_fake_mode(false);
+				}
+            }
+			return true;
+        /* KEYBOARD PET STATUS START */
+        case KC_LCTL:
+        case KC_RCTL:
+            if (record->event.pressed) {
+                set_sneaking(true);
+                // DragScrollX = 255;
+            } else {
+                set_sneaking(false);
+                // DragScrollX = 6;
+            }
+            return true;
+        case KC_SPC:
+            if (record->event.pressed) {
+				set_jumping(true);
+            } else {
+				set_jumping(false);
+            }
+            return true;
+        case SC_LSPO:
+            if (record->event.pressed && get_current_wpm() > MIN_WALK_SPEED) {
+                set_jumping(true);
+            } else {
+                set_jumping(false);
+            }
+            return true;
+        /* KEYBOARD PET STATUS END */
+    }
+
     dprintf("KL: kc: 0x%04X, col: %2u, row: %2u, pressed: %u, time: %5u, int: %u, count: %u\n", keycode, record->event.key.col, record->event.key.row, record->event.pressed, record->event.time, record->tap.interrupted, record->tap.count);
-#endif
+    dprintf("kc: %s\n", get_keycode_string(keycode));
+
     return true;
 }
 
-void matrix_scan_user(void) {
-    // idle_timer needs to be set one time
-    // if (idle_timer == 0) idle_timer = timer_read32();
-    // if (timer_elapsed32(idle_timer) > IDLE_TIMEOUT_SECS * 1000 && !idle_mode) {
-        // idle_mode  = true;
-        // idle_timer = timer_read32();
-    // }
-    if (last_input_activity_elapsed() > IDLE_TIMEOUT_SECS*1000 && !idle_mode) {
-        idle_mode = true;
-    }
-    idle_function();
-}
+report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+	static bool togg = false;
+	if (fake_mode) {
+		if (togg) {
+            mouse_report.x = 10;
+			togg = false;
+        } else {
+            mouse_report.x = -10;
+			togg = true;
+        }
+	}
 
-void idle_function() {
-    static bool last_state_idle = false;
-    if (idle_mode && !last_state_idle) { // rising edge of idle mode
-        old_rgb_mode = rgb_matrix_get_mode();
-        rgb_matrix_mode(RGB_MATRIX_IDLE_MODE);
-    }
-    if (!idle_mode && last_state_idle) { // falling edge of idle mode
-        rgb_matrix_mode(old_rgb_mode);
-    }
-    last_state_idle = idle_mode;
+    return mouse_report;
 }
