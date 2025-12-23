@@ -71,7 +71,7 @@ void housekeeping_task_user(void) {
     }
 
     // read chip timer to generate random number for cat idle blinks
-    set_anim_frame_duration1_old(timer_read32() % 3);
+    set_anim_frame_duration1_old(timer_read32() % 10);
 }
 
 /***********/
