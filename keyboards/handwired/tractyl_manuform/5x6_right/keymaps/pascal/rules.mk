@@ -1,8 +1,8 @@
-BOOTLOADER = tinyuf2
+# BOOTLOADER = tinyuf2 # for f411 build, uncomment, for rp2040 leave as is
 
 CONSOLE_ENABLE = yes
 
-SWAP_HANDS_ENABLE                = no
+SWAP_HANDS_ENABLE = no
 MAGIC_ENABLE = yes
 BOOTMAGIC_ENABLE = yes
 COMMAND_ENABLE = no

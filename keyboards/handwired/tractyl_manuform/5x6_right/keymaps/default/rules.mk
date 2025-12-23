@@ -1,2 +1,2 @@
 
-BOOTLOADER = tinyuf2
+# BOOTLOADER = tinyuf2
